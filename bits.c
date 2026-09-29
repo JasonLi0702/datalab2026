@@ -19,7 +19,7 @@
  * Difficulty: 1
  */
 int bitAnd(int x, int y) {
-    return 2;
+    return ~(~x | ~y);
 }
 
 /*
@@ -30,7 +30,7 @@ int bitAnd(int x, int y) {
  *   Difficulty: 1
  */
 int bitXor(int x, int y) {
-    return 2;
+    return ((~(~x & ~y)) & (~(x & y)));
 }
 
 /*
@@ -50,7 +50,9 @@ int bitXor(int x, int y) {
  *   1 if x and y have the same sign , 0 otherwise.
  */
 int samesign(int x, int y) {
-    return 2;
+    if(!((x>>31)^(y>>31)))
+        return !((!x)^(!y));
+    else return 0;
 }
 
 /*
@@ -63,7 +65,17 @@ int samesign(int x, int y) {
  *   Difficulty: 4
  */
 int logtwo(int v) {
-    return 2;
+    int b16=(!!(v>>16))<<4;
+    v=v>>b16;
+    int b8=(!!(v>>8))<<3;
+    v=v>>b8;
+    int b4=(!!(v>>4))<<2;
+    v=v>>b4;
+    int b2=(!!(v>>2))<<1;
+    v=v>>b2;
+    int b1=(!!(v>>1));
+
+    return (b16|b8|b4|b2|b1);
 }
 
 /*
@@ -76,7 +88,15 @@ int logtwo(int v) {
  *    Difficulty: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+    int n3 = n<<3;//n*8
+    int m3 = m<<3;
+    int n_mark=(0xFF << n3);
+    int m_mark=(0xFF << m3);
+    int body=~(n_mark|m_mark);
+    int body_num=(x & body);//7
+    int n_num=(((x & n_mark) >> n3)<<m3)&m_mark;
+    int m_num=(((x & m_mark) >> m3)<<n3)&n_mark;   
+    return body_num|(n_num|m_num);//17
 }
 
 /*
@@ -88,7 +108,12 @@ int byteSwap(int x, int n, int m) {
  *   Difficulty: 3
  */
 unsigned reverse(unsigned v) {
-    return 2;
+    unsigned int answer=0;
+    int i=0;
+    for(i=0;!!(i-32);i=i+1){
+        answer=answer+(((v>>i)&1)<<(31-i));
+    }
+        return answer;
 }
 
 /*
@@ -100,7 +125,12 @@ unsigned reverse(unsigned v) {
  *   Difficulty: 3
  */
 int logicalShift(int x, int n) {
-    return 2;
+    int mask=0x80000000;
+    x=x>>n;
+    mask=~(mask>>(n+1+~(1)));
+    int ans_NnotZero=x&mask;
+    int signal=!!n;
+    return (((~(signal))+1)&ans_NnotZero)|((~((~(signal))+1))&x);
 }
 
 /*
@@ -112,7 +142,21 @@ int logicalShift(int x, int n) {
  *   Difficulty: 4
  */
 int leftBitCount(int x) {
-    return 2;
+    x=~x;
+    int s=x>>31;
+    int b16=(!!(x>>16))<<4;
+    x=x>>b16;
+    int b8=(!!(x>>8))<<3;
+    x=x>>b8;
+    int b4=(!!(x>>4))<<2;
+    x=x>>b4;
+    int b2=(!!(x>>2))<<1;
+    x=x>>b2;
+    int b1=(!!(x>>1));
+    x=x>>b1;
+    int b0=x;
+    return ((~s)&(33+(~(b16+b8+b4+b2+b1+b0))))|0;
+
 }
 
 /*
@@ -124,7 +168,31 @@ int leftBitCount(int x) {
  *   Difficulty: 4
  */
 unsigned float_i2f(int x) {
-    return 2;
+  unsigned v, keep, lost, half, sign;
+    int mask=0x007FFFFF,shift=0;//保留23位待存入小數部分
+    if(x==0)
+        return 0;
+    sign=x&0x80000000u;
+    v=x;
+    if(sign)
+        v=~v+1;
+    int locate=0;
+    while ((v>>locate)>1)
+        locate=locate+1;
+    if(locate>23){
+        shift=locate-23;
+        keep=v>>shift;
+        lost=v-(keep<<shift);
+        half=1u<<(shift-1);
+        if((lost+(keep&1))>half)
+            keep=keep+1;
+
+        locate=locate+(keep>>24);
+    }
+    else{
+        keep=v<<(23-locate);
+    }
+    return sign|((127+locate)<<23)|(keep&mask);
 }
 
 /*
@@ -139,7 +207,27 @@ unsigned float_i2f(int x) {
  *   Difficulty: 4
  */
 unsigned floatScale2(unsigned uf) {
-    return 2;
+    unsigned sign = uf & 0x80000000u,exp = uf & 0x7F800000u,frac = uf & 0x007FFFFFu;
+    unsigned new_exp = exp >> 23;
+    if(new_exp == 0xFFu)
+        return uf;
+    if(new_exp == 0){
+        if(frac == 0)
+            return uf;
+        frac=frac<<1;//frac*2 if唔會爆就直接re,else變做-125唔要咗第廿四個
+        if(frac & 0x00800000u){     
+            new_exp = 1;
+            frac = frac & 0x007FFFFFu;
+            return sign | (new_exp << 23) | frac;
+        }
+        return sign | (new_exp << 23) | frac;
+    }
+    else{
+        new_exp = new_exp + 1;
+        if(new_exp == 0xFFu)
+            return sign | 0x7F800000u;
+        return sign | (new_exp << 23) | frac;
+    }
 }
 
 /*
@@ -156,7 +244,16 @@ unsigned floatScale2(unsigned uf) {
  *   Difficulty: 3
  */
 int float64_f2i(unsigned uf1, unsigned uf2) {
-    return 2;
+    int exp=((uf2>>20)&0x7FF);
+    if((exp-1023)>=31)
+        return 0x80000000;
+    if((exp-1023)<0)
+        return 0;
+    int frac=((uf2&0xFFFFF)<<10)|((uf1&0xFFC00000)>>22)|0x40000000;
+    int num=frac>>(30-(exp-1023));
+    if(uf2>=0x80000000u)
+        return -num;
+    return num;
 }
 
 /*
@@ -173,5 +270,13 @@ int float64_f2i(unsigned uf1, unsigned uf2) {
  *   Difficulty: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+    if(x>127)
+        return 0x7F800000;
+    else if(x<-126)
+        if(x<-149)
+            return 0;
+        else
+            return 1<<(149+x);
+    else
+        return (x+127)<<23;
 }
