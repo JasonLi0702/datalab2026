@@ -65,15 +65,15 @@ int samesign(int x, int y) {
  *   Difficulty: 4
  */
 int logtwo(int v) {
-    int b16=(!!(v>>16))<<4;
+    int b16=((v>>16)>0)<<4;//ppt上!!(v>>16)等價於(v>>16)>0
     v=v>>b16;
-    int b8=(!!(v>>8))<<3;
+    int b8=((v>>8)>0)<<3;
     v=v>>b8;
-    int b4=(!!(v>>4))<<2;
+    int b4=((v>>4)>0)<<2;
     v=v>>b4;
-    int b2=(!!(v>>2))<<1;
+    int b2=((v>>2)>0)<<1;
     v=v>>b2;
-    int b1=(!!(v>>1));
+    int b1=((v>>1)>0);
 
     return (b16|b8|b4|b2|b1);
 }
